@@ -623,15 +623,26 @@ void setupNextAlarm15() {
     uint8_t nextMinute = (now.minute() / 15 + 1) * 15;
     
     if (nextMinute >= 60) {
-        nextMinute = 0; // Wrap around to the next hour
+        nextMinute = 0; 
     }
 
-    // rtccMatchMinutes matches both Minutes AND Seconds (00)
-    // The first two arguments (date, hour) are ignored by this mask.
-    rtc.enableInterrupts(MATCH_MINUTES, 0, 0, nextMinute, 0);
+    // --- SMART JITTER LOGIC ---
+    // Seed the random generator using internal noise from an unconnected pin 
+    // or the low bits of your battery reading.
+    randomSeed(analogRead(A0) + analogRead(batteryPin));
+    
+    // Pick a random second between 0 and 55. 
+    // This spreads 20 devices across nearly a full minute.
+    uint8_t randomSecond = random(0, 30); 
+
+    // Use your specific library syntax:
+    // (Type, Daydate, Hour, Minute, Second)
+    rtc.enableInterrupts(MATCH_MINUTES, 0, 0, nextMinute, randomSecond); 
     
     #if defined DEBUG
-      Serial.print(F("Next Alarm set for minute: "));
-      Serial.println(nextMinute);
+      Serial.print(F("Next Alarm: "));
+      Serial.print(nextMinute);
+      Serial.print(F(":"));
+      Serial.println(randomSecond);
     #endif
 }
